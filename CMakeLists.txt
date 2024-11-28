@@ -14,5 +14,4 @@ include_directories(include)
 include_directories(lib/memdb/include)
 
 #set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
-add_executable(driver src/driver.cpp)
-add_executable(test src/test.cpp)
+add_executable(driver src/driver.cpp "lib/memdb/include/lexem.h" "lib/memdb/include/visitor.h")

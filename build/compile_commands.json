@@ -1,0 +1,12 @@
+[
+{
+  "directory": "/mnt/d/Projects/memdb/build",
+  "command": "/usr/bin/g++   -I/mnt/d/Projects/memdb/include -I/mnt/d/Projects/memdb/lib/memdb/include   -Wall -pedantic -pedantic-errors -g -O3 -g   -std=c++17 -o CMakeFiles/test.dir/src/test.cpp.o -c /mnt/d/Projects/memdb/src/test.cpp",
+  "file": "/mnt/d/Projects/memdb/src/test.cpp"
+},
+{
+  "directory": "/mnt/d/Projects/memdb/build",
+  "command": "/usr/bin/g++   -I/mnt/d/Projects/memdb/include -I/mnt/d/Projects/memdb/lib/memdb/include   -Wall -pedantic -pedantic-errors -g -O3 -g   -std=c++17 -o CMakeFiles/driver.dir/src/driver.cpp.o -c /mnt/d/Projects/memdb/src/driver.cpp",
+  "file": "/mnt/d/Projects/memdb/src/driver.cpp"
+}
+]

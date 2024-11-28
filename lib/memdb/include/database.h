@@ -89,6 +89,19 @@ namespace memdb
 			}
 		}
 
+		ResultSet select(const std::string& name, const std::vector<std::string>& columns, ASTNode* ast)
+		{
+			try
+			{
+				Table* table = get(name);
+				return table->select(columns, ast);
+			}
+			catch (std::runtime_error& e)
+			{
+				return error_result(e.what());
+			}
+		}
+
 		ResultSet create_ordered_index(const std::string &table_name, const std::vector<std::string> &columns)
 		{
 			try
@@ -158,6 +171,13 @@ namespace memdb
 						}
 					}
 					return insert(def.name, values);
+				}
+				else if (lexems[0].type == LexemType::SELECT)
+				{
+					SelectParser parser(lexems);
+					SelectDef def = parser.parse();
+
+					return select(def.name, def.columns, def.ast);
 				}
 				throw std::runtime_error("Not implemented yet");
 			}

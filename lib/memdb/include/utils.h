@@ -6,6 +6,7 @@
 
 #include "base.h"
 #include "bytes.h"
+#include "lexem.h"
 
 namespace memdb
 {
@@ -69,5 +70,64 @@ namespace memdb
 		Bytes b = Bytes(data, data + n);
 		delete[] data;
 		return b;
+	}
+
+	inline Value lex_to_value(const Lexem& lexem)
+	{
+		if (lexem.type == LexemType::INT_LIT)
+		{
+			return Value((int32_t)std::stoi(lexem.value));
+		}
+		if (lexem.type == LexemType::BOOL_LIT)
+		{
+			return Value((bool)(strcmpi(lexem.value, "true") ? true : false));
+		}
+		if (lexem.type == LexemType::STR_LIT)
+		{
+			return Value(lexem.value);
+		}
+		if (lexem.type == LexemType::BT_LIT)
+		{
+			return Value((Bytes)bytes_from_hex_string(lexem.value));
+		}
+		throw std::runtime_error("No conversion");
+	}
+
+	inline bool is_logic_op(const Lexem& lex)
+	{
+		const auto& type = lex.type;
+		return type == LexemType::AND ||
+			type == LexemType::OR ||
+			type == LexemType::XOR;
+	}
+
+	inline bool is_rel_op(const Lexem& lex)
+	{
+		const auto& type = lex.type;
+		return type == LexemType::EQ ||
+			type == LexemType::NE ||
+			type == LexemType::GE ||
+			type == LexemType::LE ||
+			type == LexemType::GT ||
+			type == LexemType::LT;
+	}
+
+	inline bool is_math_op(const Lexem& lex)
+	{
+		const auto& type = lex.type;
+		return type == LexemType::PLUS ||
+			type == LexemType::MINUS ||
+			type == LexemType::MULT ||
+			type == LexemType::DIV ||
+			type == LexemType::MOD;
+	}
+
+	inline bool is_literal(const Lexem& lex)
+	{
+		const auto& type = lex.type;
+		return type == LexemType::INT_LIT ||
+			type == LexemType::BOOL_LIT ||
+			type == LexemType::STR_LIT ||
+			type == LexemType::BT_LIT;
 	}
 }

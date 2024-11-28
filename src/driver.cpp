@@ -182,9 +182,15 @@ int main()
 
         std::cout << "Selecting by conditions... ";
         std::cout.flush();
-        ResultSet rs4 = db.select("users", {{cond1, 0}, {cond2, 0}, {cond3, 2}, {cond4, 1}, {cond5, 1}, {cond6, 3}, {cond7, 3}});
+        //ResultSet rs4 = db.select("users", {{cond1, 0}, {cond2, 0}, {cond3, 2}, {cond4, 1}, {cond5, 1}, {cond6, 3}, {cond7, 3}});
+        ResultSet rs4 = db.execute("select id, login from users where (is_admin || !is_admin) && (id < 10 || login = \"a\")");
         std::cout << rs4.get_time() << " ms (" << rs4.get_row_count() << " rows)" << std::endl
                   << std::endl;
+
+        if (!rs4.is_ok())
+        {
+            throw std::runtime_error(rs4.get_error());
+        }
 
         std::cout << std::setw(8) << std::left << rs4.get_columns()[0]
                   << std::setw(16) << std::left << rs4.get_columns()[1]

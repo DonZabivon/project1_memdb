@@ -125,6 +125,19 @@ namespace memdb
         friend bool operator>(const Value &lhs, const Value &rhs);
         friend bool operator<=(const Value &lhs, const Value &rhs);
         friend bool operator>=(const Value &lhs, const Value &rhs);
+
+        friend Value operator+(const Value& lhs, const Value& rhs);
+        friend Value operator-(const Value& lhs, const Value& rhs);
+        friend Value operator*(const Value& lhs, const Value& rhs);
+        friend Value operator/(const Value& lhs, const Value& rhs);
+        friend Value operator%(const Value& lhs, const Value& rhs);
+        friend Value operator+(const Value& lhs);
+        friend Value operator-(const Value& lhs);
+
+        friend Value operator&(const Value& lhs, const Value& rhs);
+        friend Value operator|(const Value& lhs, const Value& rhs);
+        friend Value operator^(const Value& lhs, const Value& rhs);
+        friend Value operator~(const Value& lhs);
     };
 
     template <>
@@ -227,6 +240,116 @@ namespace memdb
     bool operator>=(const Value &lhs, const Value &rhs)
     {
         return !(lhs < rhs);
+    }
+
+    Value operator+(const Value& lhs, const Value& rhs)
+    {
+        if (lhs.type == Type::INT)
+        {
+            return Value(lhs.get<int32_t>() + rhs.get<int32_t>());
+        }
+        if (lhs.type == Type::BOOL)
+        {
+            throw std::runtime_error("Operation not allowed");
+        }
+        if (lhs.type == Type::STRING)
+        {
+            return Value(lhs.get<std::string>() + rhs.get<std::string>());
+        }
+        if (lhs.type == Type::BYTES)
+        {
+            throw std::runtime_error("Operation not allowed");
+        }
+    }
+
+    Value operator-(const Value& lhs, const Value& rhs)
+    {
+        if (lhs.type == Type::INT)
+        {
+            return Value(lhs.get<int32_t>() - rhs.get<int32_t>());
+        }
+        throw std::runtime_error("Operation not allowed");
+    }
+
+    Value operator*(const Value& lhs, const Value& rhs)
+    {
+        if (lhs.type == Type::INT)
+        {
+            return Value(lhs.get<int32_t>() * rhs.get<int32_t>());
+        }
+        throw std::runtime_error("Operation not allowed");
+    }
+
+    Value operator/(const Value& lhs, const Value& rhs)
+    {
+        if (lhs.type == Type::INT)
+        {
+            return Value(lhs.get<int32_t>() / rhs.get<int32_t>());
+        }
+        throw std::runtime_error("Operation not allowed");
+    }
+
+    Value operator%(const Value& lhs, const Value& rhs)
+    {
+        if (lhs.type == Type::INT)
+        {
+            return Value(lhs.get<int32_t>() % rhs.get<int32_t>());
+        }
+        throw std::runtime_error("Operation not allowed");
+    }
+
+    Value operator+(const Value& lhs)
+    {
+        if (lhs.type == Type::INT)
+        {
+            return lhs;
+        }
+        throw std::runtime_error("Operation not allowed");
+    }
+
+    Value operator-(const Value& lhs)
+    {
+        if (lhs.type == Type::INT)
+        {
+            return Value(-lhs.get<int32_t>());
+        }
+        throw std::runtime_error("Operation not allowed");
+    }
+
+    Value operator&(const Value& lhs, const Value& rhs)
+    {
+        if (lhs.type == Type::BOOL)
+        {
+            return Value(lhs.get<bool>() && rhs.get<bool>());
+        }
+        throw std::runtime_error("Operation not allowed");
+    }
+
+    Value operator|(const Value& lhs, const Value& rhs)
+    {
+        if (lhs.type == Type::BOOL)
+        {
+            return Value(lhs.get<bool>() || rhs.get<bool>());
+        }
+        throw std::runtime_error("Operation not allowed");
+    }
+
+    Value operator^(const Value& lhs, const Value& rhs)
+    {
+        if (lhs.type == Type::BOOL)
+        {
+            return Value(lhs.get<bool>() != rhs.get<bool>());
+        }
+        throw std::runtime_error("Operation not allowed");
+    }
+
+    Value operator~(const Value& lhs)
+    {
+        if (lhs.type == Type::BOOL)
+        {
+            return Value(!lhs.get<bool>());
+        }
+        throw std::runtime_error("Operation not allowed");
     }
 
 }

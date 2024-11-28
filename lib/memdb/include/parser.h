@@ -13,6 +13,8 @@
 #include "column.h"
 #include "lexer.h"
 #include "utils.h"
+#include "ast.h"
+#include "visitor.h"
 
 namespace memdb
 {
@@ -34,9 +36,16 @@ namespace memdb
 	{
 		std::string name;
 		std::vector<std::string> columns;
-		bool is_ordered;
-	};
+		bool is_ordered = false;
+	};	
 
+	struct SelectDef
+	{
+		std::string name;
+		std::vector<std::string> columns;
+		ASTNode *ast;
+	};
+	
 	class Parser
 	{
 	public:
@@ -76,7 +85,7 @@ namespace memdb
 		{
 			return input[pos];
 		}
-	};
+	};	
 
 	class CreateTableParser : public Parser
 	{
@@ -90,7 +99,7 @@ namespace memdb
 		Value def_value;
 
 	public:
-		CreateTableParser(const std::vector<Lexem> &input) : Parser(input) {}
+		CreateTableParser(const std::vector<Lexem>& input) : Parser(input) {}
 
 		CreateTableDef parse()
 		{
@@ -286,7 +295,7 @@ namespace memdb
 		InsertDef def;
 
 	public:
-		InsertParser(const std::vector<Lexem> &input) : Parser(input) {}
+		InsertParser(const std::vector<Lexem>& input) : Parser(input) {}
 
 		InsertDef parse()
 		{
@@ -427,7 +436,7 @@ namespace memdb
 		IndexDef def;
 
 	public:
-		CreateIndexParser(const std::vector<Lexem> &input) : Parser(input) {}
+		CreateIndexParser(const std::vector<Lexem>& input) : Parser(input) {}
 
 		IndexDef parse()
 		{
@@ -470,6 +479,147 @@ namespace memdb
 				accept(LexemType::COMMA);
 				parse_column_list();
 			}
+		}
+	};	
+
+	class SelectParser : public Parser
+	{
+		SelectDef def;
+
+	public:
+		SelectParser(const std::vector<Lexem>& input) : Parser(input) {}
+
+		SelectDef parse()
+		{
+			accept(LexemType::SELECT);
+			parse_columns();			
+			accept(LexemType::FROM);			
+			def.name = accept(LexemType::ID).value;
+			accept(LexemType::WHERE);
+			def.ast = parse_or();
+			accept(LexemType::EOQ);
+
+			CondSimplifyVisitor visitor;
+			def.ast = visitor.visit(def.ast);
+			return def;
+		}
+	private:
+		void parse_columns()
+		{			
+			def.columns.push_back(accept(LexemType::ID).value);
+			while (peek().type == LexemType::COMMA)
+			{
+				accept(LexemType::COMMA);
+				def.columns.push_back(accept(LexemType::ID).value);
+			}
+		}
+
+		ASTNode* parse_or()
+		{			
+			ASTNode* node = parse_xor();
+			while (peek().type == LexemType::OR)
+			{
+				const auto& lex = accept(peek().type);
+				node = new InternalNode(lex, node, parse_xor());
+			}
+			return node;
+		}
+
+		ASTNode* parse_xor()
+		{			
+			ASTNode* node = parse_and();
+			while (peek().type == LexemType::XOR)
+			{
+				const auto& lex = accept(peek().type);
+				node = new InternalNode(lex, node, parse_and());
+			}
+			return node;
+		}
+
+		ASTNode* parse_and()
+		{			
+			ASTNode* node = parse_rel();
+			while (peek().type == LexemType::AND)
+			{
+				const auto& lex = accept(peek().type);
+				node = new InternalNode(lex, node, parse_rel());
+			}
+			return node;
+		}
+
+		ASTNode* parse_rel()
+		{			
+			ASTNode* node = parse_sum_expr();
+			if (is_rel_op(peek()))
+			{
+				const auto& lex = accept(peek().type);
+				return new InternalNode(lex, node, parse_sum_expr());
+			}
+			return node;
+		}
+
+		ASTNode* parse_sum_expr()
+		{			
+			ASTNode* node = parse_mul_expr();
+			while (peek().type == LexemType::PLUS || peek().type == LexemType::MINUS)
+			{
+				const auto& lex = accept(peek().type);
+				node = new InternalNode(lex, node, parse_mul_expr());
+			}
+			return node;
+		}
+
+		ASTNode* parse_mul_expr()
+		{			
+			ASTNode* node = parse_factor();
+			while (peek().type == LexemType::MULT || peek().type == LexemType::DIV || peek().type == LexemType::MOD)
+			{
+				const auto& lex = accept(peek().type);
+				node = new InternalNode(lex, node, parse_factor());
+			}
+			return node;
+		}
+
+
+		ASTNode* parse_factor()
+		{			
+			if (peek().type == LexemType::PLUS || peek().type == LexemType::MINUS)
+			{
+				// Unary operation
+				const auto& lex = accept(peek().type);
+				return new InternalNode(lex, parse_factor(), nullptr);
+			}
+			if (peek().type == LexemType::NOT)
+			{
+				// Unary operation
+				const auto& lex = accept(peek().type);
+				return new InternalNode(lex, parse_factor(), nullptr);
+			}
+			if (peek().type == LexemType::ID)
+			{
+				// Variable
+				const auto& lex = accept(peek().type);
+				return new LeafNode(lex);
+			}
+			else if (is_literal(peek()))
+			{
+				// Literal
+				const auto& lex = accept(peek().type);
+				return new LeafNode(lex);
+			}
+			else if (peek().type == LexemType::LPAR)
+			{
+				// Parenthesis
+				accept(LexemType::LPAR);
+				ASTNode* node = parse_or();
+				accept(LexemType::RPAR);
+				return node;
+			}
+			else
+			{
+				syntax_error();
+			}
+			return nullptr;
 		}
 	};
 }

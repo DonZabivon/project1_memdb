@@ -16,6 +16,8 @@
 #include "condition.h"
 #include "resultset.h"
 #include "utils.h"
+#include "ast.h"
+#include "visitor.h"
 
 namespace memdb
 {
@@ -267,6 +269,67 @@ namespace memdb
             return rs;
         }
 
+        ResultSet select(const std::vector<std::string>& cols, ASTNode* ast)
+        {            
+            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+            ResultSet rs = init_result_set();
+            std::vector<size_t> included_rows;
+
+            try
+            {
+                for (const auto& col_name : cols)
+                {
+                    if (name_to_col.count(col_name) == 0)
+                        throw std::runtime_error("Unknown column \"" + col_name + "\" in the column list.");
+                }
+                SymbolVisitor visitor;
+                const auto& symbols = visitor.visit(ast);
+                for (const auto& item : symbols)
+                {
+                    if (name_to_col.count(item.first) == 0)
+                        throw std::runtime_error("Unknown symbol \"" + item.first + "\" in the condition.");
+                }
+
+                for (size_t row_idx = 0; row_idx < row_count; ++row_idx)
+                {
+                    std::vector<Value*> values;
+                    for (auto& item : symbols)
+                    {
+                        size_t col = name_to_col.at(item.first);
+                        values.push_back(new Value(value_at(row_idx, columns[col])));
+                        for (auto& x : item.second)
+                        {
+                            x->value = values.back();
+                        }
+                    }
+
+                    EvalVisitor evaluator;
+                    Value match = evaluator.visit(ast);
+                    
+                    if (match.get<bool>())
+                    {
+                        included_rows.push_back(row_idx);
+                    }
+
+                    for (auto& val : values)
+                    {
+                        delete val;
+                    }
+                }
+
+                make_resultset(included_rows, rs);
+            }
+            catch (std::runtime_error& e)
+            {
+                rs.ok = false;
+                rs.error = e.what();
+            }
+
+            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+            rs.time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+            return rs;
+        }
+        
         IndexRange select_by_index(const OrderedIndex &index, const Condition &cond)
         {
             if (cond.op == CondOp::EQ)
