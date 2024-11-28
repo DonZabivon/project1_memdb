@@ -1,4 +1,0 @@
-/mnt/d/Projects/memdb/build/CMakeFiles/rebuild_cache.dir
-/mnt/d/Projects/memdb/build/CMakeFiles/edit_cache.dir
-/mnt/d/Projects/memdb/build/CMakeFiles/test.dir
-/mnt/d/Projects/memdb/build/CMakeFiles/driver.dir

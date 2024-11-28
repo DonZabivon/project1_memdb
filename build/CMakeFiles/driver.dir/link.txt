@@ -1,1 +1,0 @@
-/usr/bin/g++   -Wall -pedantic -pedantic-errors -g -O3 -g   CMakeFiles/driver.dir/src/driver.cpp.o  -o driver 
