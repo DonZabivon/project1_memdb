@@ -23,7 +23,7 @@ namespace memdb
         XOR
     };
 
-    enum class CondOp
+    enum class RelOp
     {
         EQ,
         NE,
@@ -31,6 +31,28 @@ namespace memdb
         GT,
         LE,
         GE
+    };
+
+    enum class Op
+    {
+        // Arithmetic
+        PLS,
+        MNS,
+        MUL,
+        DIV,
+        MOD,
+        // Relation
+        EQ,
+        NE,
+        LT,
+        GT,
+        LE,
+        GE,
+        // Logic
+        AND,
+        OR,
+        XOR,
+        NOT
     };
 
 }

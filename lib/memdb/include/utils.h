@@ -7,6 +7,7 @@
 #include "base.h"
 #include "bytes.h"
 #include "lexem.h"
+#include "value.h"
 
 namespace memdb
 {
@@ -93,6 +94,44 @@ namespace memdb
 		throw std::runtime_error("No conversion");
 	}
 
+	inline Op lex_to_op(const Lexem& lexem)
+	{
+		switch (lexem.type)
+		{
+		case LexemType::PLUS:
+			return Op::PLS;
+		case LexemType::MINUS:
+			return Op::MNS;
+		case LexemType::MULT:
+			return Op::MUL;
+		case LexemType::DIV:
+			return Op::DIV;
+		case LexemType::MOD:
+			return Op::MOD;
+		case LexemType::EQ:
+			return Op::EQ;
+		case LexemType::NE:
+			return Op::NE;
+		case LexemType::LT:
+			return Op::LT;
+		case LexemType::GT:
+			return Op::GT;
+		case LexemType::LE:
+			return Op::LE;
+		case LexemType::GE:
+			return Op::GE;
+		case LexemType::AND:
+			return Op::AND;
+		case LexemType::OR:
+			return Op::OR;
+		case LexemType::XOR:
+			return Op::XOR;
+		case LexemType::NOT:
+			return Op::NOT;
+		}
+		throw std::runtime_error("No conversion");
+	}
+
 	inline bool is_logic_op(const Lexem& lex)
 	{
 		const auto& type = lex.type;
@@ -104,7 +143,8 @@ namespace memdb
 	inline bool is_rel_op(const Lexem& lex)
 	{
 		const auto& type = lex.type;
-		return type == LexemType::EQ ||
+		return 
+			type == LexemType::EQ ||
 			type == LexemType::NE ||
 			type == LexemType::GE ||
 			type == LexemType::LE ||
@@ -115,19 +155,75 @@ namespace memdb
 	inline bool is_math_op(const Lexem& lex)
 	{
 		const auto& type = lex.type;
-		return type == LexemType::PLUS ||
+		return 
+			type == LexemType::PLUS ||
 			type == LexemType::MINUS ||
 			type == LexemType::MULT ||
 			type == LexemType::DIV ||
 			type == LexemType::MOD;
+	}	
+
+	inline bool is_logic_op(Op op)
+	{		
+		return 
+			op == Op::AND ||
+			op == Op::OR ||
+			op == Op::XOR;
+	}
+
+	inline bool is_rel_op(Op op)
+	{		
+		return 
+			op == Op::EQ ||
+			op == Op::NE ||
+			op == Op::GE ||
+			op == Op::LE ||
+			op == Op::GT ||
+			op == Op::LT;
+	}
+
+	inline bool is_math_op(Op op)
+	{		
+		return 
+			op == Op::PLS ||
+			op == Op::MNS ||
+			op == Op::MUL ||
+			op == Op::DIV ||
+			op == Op::MOD;
 	}
 
 	inline bool is_literal(const Lexem& lex)
 	{
 		const auto& type = lex.type;
-		return type == LexemType::INT_LIT ||
+		return
+			type == LexemType::INT_LIT ||
 			type == LexemType::BOOL_LIT ||
 			type == LexemType::STR_LIT ||
 			type == LexemType::BT_LIT;
+	}
+
+	inline bool is_id(const Lexem& lex)
+	{		
+		return lex.type == LexemType::ID;			
+	}
+
+	inline RelOp op_to_relop(Op op)
+	{
+		switch (op)
+		{		
+		case memdb::Op::EQ:
+			return RelOp::EQ;
+		case memdb::Op::NE:
+			return RelOp::NE;
+		case memdb::Op::LT:
+			return RelOp::LT;
+		case memdb::Op::GT:
+			return RelOp::GT;
+		case memdb::Op::LE:
+			return RelOp::LE;
+		case memdb::Op::GE:
+			return RelOp::GE;
+		}
+		throw std::runtime_error("No conversion");
 	}
 }

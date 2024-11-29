@@ -11,25 +11,25 @@ namespace memdb
     struct Condition
     {
         Value rhs;
-        CondOp op;
+        RelOp op;
 
-        Condition(const Value &rhs, CondOp op) : rhs(rhs), op(op) {}
+        Condition(const Value &rhs, RelOp op) : rhs(rhs), op(op) {}
 
         bool match(const Value &lhs) const
         {
             switch (op)
             {
-            case CondOp::EQ:
+            case RelOp::EQ:
                 return lhs == rhs;
-            case CondOp::NE:
+            case RelOp::NE:
                 return lhs != rhs;
-            case CondOp::LT:
+            case RelOp::LT:
                 return lhs < rhs;
-            case CondOp::GT:
+            case RelOp::GT:
                 return lhs > rhs;
-            case CondOp::LE:
+            case RelOp::LE:
                 return lhs <= rhs;
-            case CondOp::GE:
+            case RelOp::GE:
                 return lhs >= rhs;
             default:
                 throw std::runtime_error("Invalid operation");

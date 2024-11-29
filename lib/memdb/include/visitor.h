@@ -36,9 +36,9 @@ namespace memdb
 							throw std::runtime_error("Mismatch of operand types in expression");
 
 						Type value_type = val1.type;
-						LexemType op_type = op_node->lexem.type;
+						Op op_type = op_node->op;
 
-						if (is_math_op(op_node->lexem))
+						if (is_math_op(op_type))
 						{
 							if (value_type == Type::INT)
 							{
@@ -46,23 +46,23 @@ namespace memdb
 								int32_t v1 = val1.get<int32_t>();
 								int32_t v2 = val2.get<int32_t>();
 
-								if (op_type == LexemType::PLUS)
+								if (op_type == Op::PLS)
 								{
 									result = v1 + v2;
 								}
-								if (op_type == LexemType::MINUS)
+								if (op_type == Op::MNS)
 								{
 									result = v1 - v2;
 								}
-								if (op_type == LexemType::MULT)
+								if (op_type == Op::MUL)
 								{
 									result = v1 * v2;
 								}
-								if (op_type == LexemType::DIV)
+								if (op_type == Op::DIV)
 								{
 									result = v1 / v2;
 								}
-								if (op_type == LexemType::MOD)
+								if (op_type == Op::MOD)
 								{
 									result = v1 % v2;
 								}
@@ -72,7 +72,7 @@ namespace memdb
 								delete root;
 								return new LeafNode(lexem);
 							}
-							else if (value_type == Type::STRING && op_type == LexemType::PLUS)
+							else if (value_type == Type::STRING && op_type == Op::PLS)
 							{
 								std::string v1 = val1.get<std::string>();
 								std::string v2 = val2.get<std::string>();
@@ -88,31 +88,31 @@ namespace memdb
 								throw std::runtime_error("Mismatch between operation and operands in expression");
 							}
 						}
-						else if (is_rel_op(op_node->lexem))
+						else if (is_rel_op(op_type))
 						{
 							bool result = false;
 
-							if (op_type == LexemType::EQ)
+							if (op_type == Op::EQ)
 							{
 								result = val1 == val2;
 							}
-							if (op_type == LexemType::NE)
+							if (op_type == Op::NE)
 							{
 								result = val1 != val2;
 							}
-							if (op_type == LexemType::LT)
+							if (op_type == Op::LT)
 							{
 								result = val1 < val2;
 							}
-							if (op_type == LexemType::GT)
+							if (op_type == Op::GT)
 							{
 								result = val1 > val2;
 							}
-							if (op_type == LexemType::LE)
+							if (op_type == Op::LE)
 							{
 								result = val1 <= val2;
 							}
-							if (op_type == LexemType::GE)
+							if (op_type == Op::GE)
 							{
 								result = val1 >= val2;
 							}
@@ -123,7 +123,7 @@ namespace memdb
 							delete root;
 							return new LeafNode(lexem);
 						}
-						else if (is_logic_op(op_node->lexem))
+						else if (is_logic_op(op_type))
 						{
 							if (value_type == Type::BOOL)
 							{
@@ -131,15 +131,15 @@ namespace memdb
 								bool v1 = val1.get<bool>();
 								bool v2 = val2.get<bool>();
 
-								if (op_type == LexemType::AND)
+								if (op_type == Op::AND)
 								{
 									result = v1 && v2;
 								}
-								if (op_type == LexemType::OR)
+								if (op_type == Op::OR)
 								{
 									result = v1 || v2;
 								}
-								if (op_type == LexemType::XOR)
+								if (op_type == Op::XOR)
 								{
 									result = v1 != v2;
 								}
@@ -163,11 +163,11 @@ namespace memdb
 					{
 						Value val1 = lex_to_value(leaf1->lexem);
 						Type value_type = val1.type;
-						LexemType op_type = op_node->lexem.type;
-						if (value_type == Type::INT && (op_type == LexemType::PLUS || op_type == LexemType::MINUS))
+						Op op_type = op_node->op;
+						if (value_type == Type::INT && (op_type == Op::PLS || op_type == Op::MNS))
 						{
 							int32_t result = val1.get<int32_t>();
-							if (op_type == LexemType::MINUS)
+							if (op_type == Op::MNS)
 							{
 								result = -result;
 							}
@@ -177,7 +177,7 @@ namespace memdb
 							delete root;
 							return new LeafNode(lexem);
 						}
-						else if (value_type == Type::BOOL && op_type == LexemType::NOT)
+						else if (value_type == Type::BOOL && op_type == Op::NOT)
 						{
 							bool result = !val1.get<bool>();
 							Lexem lexem;
@@ -250,40 +250,40 @@ namespace memdb
 			LeafNode* leaf_node;
 			if (op_node = dynamic_cast<InternalNode*>(root))
 			{
-				LexemType op_type = op_node->lexem.type;
+				Op op_type = op_node->op;
 				Value val1 = visit(op_node->left);
 				Value val2 = visit(op_node->right);
 				if (val2.type != Type::NONE)
 				{					
 					switch (op_type)
 					{
-					case LexemType::PLUS:
+					case Op::PLS:
 						return val1 + val2;
-					case LexemType::MINUS:
+					case Op::MNS:
 						return val1 - val2;
-					case LexemType::MULT:
+					case Op::MUL:
 						return val1 * val2;
-					case LexemType::DIV:
+					case Op::DIV:
 						return val1 / val2;
-					case LexemType::MOD:
+					case Op::MOD:
 						return val1 % val2;
-					case LexemType::EQ:
+					case Op::EQ:
 						return val1 == val2;
-					case LexemType::NE:
+					case Op::NE:
 						return val1 != val2;
-					case LexemType::LT:
+					case Op::LT:
 						return val1 < val2;
-					case LexemType::GT:
+					case Op::GT:
 						return val1 > val2;
-					case LexemType::LE:
+					case Op::LE:
 						return val1 <= val2;
-					case LexemType::GE:
+					case Op::GE:
 						return val1 >= val2;
-					case LexemType::AND:
+					case Op::AND:
 						return val1 & val2;
-					case LexemType::OR:
+					case Op::OR:
 						return val1 | val2;
-					case LexemType::XOR:
+					case Op::XOR:
 						return val1 ^ val2;
 					}
 					throw std::runtime_error("Unreachable");
@@ -293,11 +293,11 @@ namespace memdb
 					// Unary op
 					switch (op_type)
 					{
-					case LexemType::PLUS:
+					case Op::PLS:
 						return val1;
-					case LexemType::MINUS:
+					case Op::MNS:
 						return -val1;
-					case LexemType::NOT:
+					case Op::NOT:
 						return ~val1;					
 					}
 					throw std::runtime_error("Unreachable");

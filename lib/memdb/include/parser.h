@@ -520,7 +520,7 @@ namespace memdb
 			while (peek().type == LexemType::OR)
 			{
 				const auto& lex = accept(peek().type);
-				node = new InternalNode(lex, node, parse_xor());
+				node = new InternalNode(Op::OR, node, parse_xor());
 			}
 			return node;
 		}
@@ -531,7 +531,7 @@ namespace memdb
 			while (peek().type == LexemType::XOR)
 			{
 				const auto& lex = accept(peek().type);
-				node = new InternalNode(lex, node, parse_and());
+				node = new InternalNode(Op::XOR, node, parse_and());
 			}
 			return node;
 		}
@@ -542,7 +542,7 @@ namespace memdb
 			while (peek().type == LexemType::AND)
 			{
 				const auto& lex = accept(peek().type);
-				node = new InternalNode(lex, node, parse_rel());
+				node = new InternalNode(Op::AND, node, parse_rel());
 			}
 			return node;
 		}
@@ -553,7 +553,7 @@ namespace memdb
 			if (is_rel_op(peek()))
 			{
 				const auto& lex = accept(peek().type);
-				return new InternalNode(lex, node, parse_sum_expr());
+				return new InternalNode(lex_to_op(lex), node, parse_sum_expr());
 			}
 			return node;
 		}
@@ -564,7 +564,7 @@ namespace memdb
 			while (peek().type == LexemType::PLUS || peek().type == LexemType::MINUS)
 			{
 				const auto& lex = accept(peek().type);
-				node = new InternalNode(lex, node, parse_mul_expr());
+				node = new InternalNode(lex_to_op(lex), node, parse_mul_expr());
 			}
 			return node;
 		}
@@ -575,7 +575,7 @@ namespace memdb
 			while (peek().type == LexemType::MULT || peek().type == LexemType::DIV || peek().type == LexemType::MOD)
 			{
 				const auto& lex = accept(peek().type);
-				node = new InternalNode(lex, node, parse_factor());
+				node = new InternalNode(lex_to_op(lex), node, parse_factor());
 			}
 			return node;
 		}
@@ -587,13 +587,13 @@ namespace memdb
 			{
 				// Unary operation
 				const auto& lex = accept(peek().type);
-				return new InternalNode(lex, parse_factor(), nullptr);
+				return new InternalNode(lex_to_op(lex), parse_factor(), nullptr);
 			}
 			if (peek().type == LexemType::NOT)
 			{
 				// Unary operation
 				const auto& lex = accept(peek().type);
-				return new InternalNode(lex, parse_factor(), nullptr);
+				return new InternalNode(Op::NOT, parse_factor(), nullptr);
 			}
 			if (peek().type == LexemType::ID)
 			{

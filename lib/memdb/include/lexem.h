@@ -70,5 +70,5 @@ namespace memdb
 		size_t col;
 		size_t begin;
 		size_t end;
-	};
+	};	
 }

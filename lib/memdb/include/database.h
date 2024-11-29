@@ -73,15 +73,23 @@ namespace memdb
 
 		ResultSet select_all(const std::string &name)
 		{
-			return select(name, std::vector<std::pair<Condition, size_t>>());
+			try
+			{
+				Table* table = get(name);
+				return table->select_all();
+			}
+			catch (std::runtime_error& e)
+			{
+				return error_result(e.what());
+			}
 		}
 
-		ResultSet select(const std::string &name, std::vector<std::pair<Condition, size_t>> conditions)
+		ResultSet select(const std::string &name, const std::vector<std::string>& cols, std::vector<std::pair<Condition, size_t>> conditions)
 		{
 			try
 			{
 				Table *table = get(name);
-				return table->select(conditions);
+				return table->select(cols, conditions);
 			}
 			catch (std::runtime_error &e)
 			{
