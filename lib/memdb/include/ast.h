@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdexcept>
 #include <vector>
 
 #include "lexem.h"
@@ -28,10 +29,26 @@ namespace memdb
 
 	struct LeafNode : public ASTNode
 	{
-		Lexem lexem;
-		Value* value = nullptr;
+		std::string id;		
+		Value value;
 
-		LeafNode(const Lexem& lexem) : ASTNode(), lexem(lexem) {}
+		/*LeafNode(const Lexem& lexem) : ASTNode()
+		{
+			if (is_literal(lexem))
+				value = lex_to_value(lexem);
+			else if (is_id(lexem))
+				id = lexem.value;
+			else
+				throw std::runtime_error("Unreachable");
+		}*/
+
+		LeafNode(const std::string& id) : ASTNode(), id(id)
+		{			
+		}
+
+		LeafNode(const Value& value) : ASTNode(), value(value)
+		{			
+		}
 	};
 
 	inline bool is_cond_index_friendly(ASTNode* root)
@@ -53,11 +70,12 @@ namespace memdb
 		{
 			
 			ASTNode* left = internal_node->left;
-			ASTNode* right = internal_node->right;
+			ASTNode* right = internal_node->right;			
 			internal_node->left = nullptr;
 			internal_node->right = nullptr;
+			delete internal_node;
 			terms.push_back(right);
-			root = left;
+			root = left;			
 			internal_node = dynamic_cast<InternalNode*>(root);
 		}
 		terms.push_back(root);
@@ -81,8 +99,8 @@ namespace memdb
 			if (left && right)
 			{
 				return
-					(is_id(left->lexem) && is_literal(right->lexem)) ||
-					(is_id(right->lexem) && is_literal(left->lexem));
+					(!left->id.empty() && !right->value.is_empty()) ||
+					(left->id.empty() && right->value.is_empty());
 			}
 		}
 		return false;

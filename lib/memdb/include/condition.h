@@ -10,27 +10,27 @@ namespace memdb
 
     struct Condition
     {
-        Value rhs;
+        Value that;
         RelOp op;
 
-        Condition(const Value &rhs, RelOp op) : rhs(rhs), op(op) {}
+        Condition(const Value &rhs, RelOp op) : that(rhs), op(op) {}
 
         bool match(const Value &lhs) const
         {
             switch (op)
             {
             case RelOp::EQ:
-                return lhs == rhs;
+                return lhs == that;
             case RelOp::NE:
-                return lhs != rhs;
+                return lhs != that;
             case RelOp::LT:
-                return lhs < rhs;
+                return lhs < that;
             case RelOp::GT:
-                return lhs > rhs;
+                return lhs > that;
             case RelOp::LE:
-                return lhs <= rhs;
+                return lhs <= that;
             case RelOp::GE:
-                return lhs >= rhs;
+                return lhs >= that;
             default:
                 throw std::runtime_error("Invalid operation");
             }

@@ -43,7 +43,7 @@ namespace memdb
 	{
 		std::string name;
 		std::vector<std::string> columns;
-		ASTNode *ast;
+		ASTNode *ast = nullptr;
 	};
 	
 	class Parser
@@ -518,8 +518,8 @@ namespace memdb
 		{			
 			ASTNode* node = parse_xor();
 			while (peek().type == LexemType::OR)
-			{
-				const auto& lex = accept(peek().type);
+			{				
+				accept(peek().type);
 				node = new InternalNode(Op::OR, node, parse_xor());
 			}
 			return node;
@@ -529,8 +529,8 @@ namespace memdb
 		{			
 			ASTNode* node = parse_and();
 			while (peek().type == LexemType::XOR)
-			{
-				const auto& lex = accept(peek().type);
+			{				
+				accept(peek().type);
 				node = new InternalNode(Op::XOR, node, parse_and());
 			}
 			return node;
@@ -540,8 +540,8 @@ namespace memdb
 		{			
 			ASTNode* node = parse_rel();
 			while (peek().type == LexemType::AND)
-			{
-				const auto& lex = accept(peek().type);
+			{				
+				accept(peek().type);
 				node = new InternalNode(Op::AND, node, parse_rel());
 			}
 			return node;
@@ -592,20 +592,18 @@ namespace memdb
 			if (peek().type == LexemType::NOT)
 			{
 				// Unary operation
-				const auto& lex = accept(peek().type);
+				accept(peek().type);
 				return new InternalNode(Op::NOT, parse_factor(), nullptr);
 			}
 			if (peek().type == LexemType::ID)
 			{
-				// Variable
-				const auto& lex = accept(peek().type);
-				return new LeafNode(lex);
+				// Variable				
+				return new LeafNode(accept(peek().type).value);
 			}
 			else if (is_literal(peek()))
 			{
-				// Literal
-				const auto& lex = accept(peek().type);
-				return new LeafNode(lex);
+				// Literal				
+				return new LeafNode(lex_to_value(accept(peek().type)));
 			}
 			else if (peek().type == LexemType::LPAR)
 			{

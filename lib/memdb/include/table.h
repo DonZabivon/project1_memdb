@@ -91,7 +91,7 @@ namespace memdb
 
             try
             {
-                std::vector<Value> v = check_inserted_values(values);
+                std::vector<Value> checked = check_inserted_values(values);
                 size_t idx = row_count;
                 add_row();
 
@@ -100,7 +100,7 @@ namespace memdb
                 {
                     size_t offset = columns[i].offset;
                     uint8_t *val_ptr = row_ptr + offset;
-                    std::copy(v[i].val_ptr, v[i].val_ptr + v[i].size, val_ptr);
+                    std::copy(checked[i].val_ptr, checked[i].val_ptr + checked[i].size, val_ptr);
                 }
 
                 // update ordered indices
@@ -115,7 +115,7 @@ namespace memdb
                     else
                     {
                         // find a position to insert using binary search
-                        size_t first = upper_bound(v[ordered_index.col], ordered_index);
+                        size_t first = upper_bound(checked[ordered_index.col], ordered_index);
                         ordered_index.index.insert(ordered_index.index.begin() + first, idx);
                     }                                       
                 }
@@ -296,72 +296,92 @@ namespace memdb
                 // x < 1 && y > 2 && z = 3 && ...
                 if (is_cond_index_friendly(ast) && is_condition_simple(ast))
                 {
+                    bool select_nothing = false;
                     std::vector<ASTNode*> terms = split_cond_by_and(ast);
                     // make simple cond
                     std::vector<std::pair<Condition, size_t>> conditions;
-                    for (const auto& term : terms)
+                    for (auto& term : terms)
                     {
                         InternalNode* internal_node = dynamic_cast<InternalNode*>(term);
                         if (!internal_node)
                         {
                             LeafNode* leaf = dynamic_cast<LeafNode*>(term);
-                            // assert(is_id(leaf->lexem))
-                            size_t col = mapping.at(leaf->lexem.value);
-                            Condition cond(Value(true), RelOp::EQ);
-                            conditions.push_back(std::make_pair(cond, col));
+                            if (!leaf->id.empty())
+                            {
+                                size_t col = mapping.at(leaf->id);
+                                Condition cond(Value(true), RelOp::EQ);
+                                conditions.push_back(std::make_pair(cond, col));
+                            }
+                            else 
+                            {
+                                bool value = leaf->value.get<bool>();
+                                if (value)
+                                {
+                                    // select all
+                                }
+                                else
+                                {
+                                    // select nothing
+                                    select_nothing = true;
+                                }
+                            }
+                            
                         }
                         else
                         {
                             LeafNode* left = dynamic_cast<LeafNode*>(internal_node->left);
                             LeafNode* right = dynamic_cast<LeafNode*>(internal_node->right);
-                            if (is_id(left->lexem))
+                            if (!left->id.empty())
                             {
-                                size_t col = mapping.at(left->lexem.value);                                
-                                Condition cond(lex_to_value(right->lexem), op_to_relop(internal_node->op));
+                                size_t col = mapping.at(left->id);                                
+                                Condition cond(right->value, op_to_relop(internal_node->op));
                                 conditions.push_back(std::make_pair(cond, col));
                             } 
                             else
                             {
-                                size_t col = mapping.at(right->lexem.value);
-                                Condition cond(lex_to_value(left->lexem), op_to_relop(internal_node->op));
+                                size_t col = mapping.at(right->id);
+                                Condition cond(left->value, op_to_relop(internal_node->op));
                                 conditions.push_back(std::make_pair(cond, col));
                             }
                         }
+                        delete term;
                     }
-                    return select(cols, conditions);
-                }
 
-                // Condition is not simple
-                for (size_t row_idx = 0; row_idx < row_count; ++row_idx)
-                {
-                    // Replace symbols in the symbol table by the real values
-                    std::vector<Value*> values;
-                    for (auto& item : symbols)
+                    if (!select_nothing)
                     {
-                        size_t col = mapping.at(item.first);
-                        values.push_back(new Value(value_at(row_idx, columns[col])));
-                        for (auto& x : item.second)
+                        return select(cols, conditions);
+                    }
+                    else
+                    {
+                        make_resultset(included_rows, rs);
+                    }
+                }
+                else
+                {
+                    // Condition is not simple
+                    for (size_t row_idx = 0; row_idx < row_count; ++row_idx)
+                    {
+                        // Replace symbols in the symbol table by the real values                    
+                        for (auto& item : symbols)
                         {
-                            x->value = values.back();
+                            size_t col = mapping.at(item.first);
+                            for (auto& x : item.second)
+                            {
+                                x->value = value_at(row_idx, columns[col]);
+                            }
+                        }
+
+                        // Evaluate condition
+                        EvalVisitor evaluator;
+                        Value match = evaluator.visit(ast);
+
+                        // Check result
+                        if (match.get<bool>())
+                        {
+                            included_rows.push_back(row_idx);
                         }
                     }
-
-                    // Evaluate condition
-                    EvalVisitor evaluator;
-                    Value match = evaluator.visit(ast);
-                    
-                    // Check result
-                    if (match.get<bool>())
-                    {
-                        included_rows.push_back(row_idx);
-                    }
-
-                    for (auto& val : values)
-                    {
-                        delete val;
-                    }
                 }
-
                 make_resultset(included_rows, rs);
             }
             catch (std::runtime_error& e)
@@ -444,35 +464,35 @@ namespace memdb
         {
             if (cond.op == RelOp::EQ)
             {
-                size_t first = lower_bound(cond.rhs, index);
-                size_t second = upper_bound(cond.rhs, index);
+                size_t first = lower_bound(cond.that, index);
+                size_t second = upper_bound(cond.that, index);
                 return { IndexRange(&index, first, second) };                
             }
             if (cond.op == RelOp::NE)
             {
                 // TODO
-                size_t first = lower_bound(cond.rhs, index);
-                size_t second = upper_bound(cond.rhs, index);
+                size_t first = lower_bound(cond.that, index);
+                size_t second = upper_bound(cond.that, index);
                 return { IndexRange(&index, 0, first) , IndexRange(&index, second, row_count) };
             }            
             if (cond.op == RelOp::LT)
             {
-                size_t first = lower_bound(cond.rhs, index);
+                size_t first = lower_bound(cond.that, index);
                 return { IndexRange(&index, 0, first) };
             }
             if (cond.op == RelOp::GT)
             {                
-                size_t first = upper_bound(cond.rhs, index);
+                size_t first = upper_bound(cond.that, index);
                 return { IndexRange(&index, first, row_count) };
             }
             if (cond.op == RelOp::LE)
             {                
-                size_t first = upper_bound(cond.rhs, index);
+                size_t first = upper_bound(cond.that, index);
                 return { IndexRange(&index, 0, first) };
             }  
             if (cond.op == RelOp::GE)
             {
-                size_t first = lower_bound(cond.rhs, index);
+                size_t first = lower_bound(cond.that, index);
                 return { IndexRange(&index, first, row_count) };
             }
             return { IndexRange(&index, row_count, row_count) };
@@ -565,6 +585,7 @@ namespace memdb
                 size_t *data = new size_t[table->row_count];
                 in.read((char *)data, table->row_count * sizeof(size_t));
                 idx.index = std::vector(data, data + table->row_count);
+                delete[] data;
                 table->ordered_indices.push_back(idx);
             }
 
@@ -609,7 +630,7 @@ namespace memdb
                 if (columns[i].type == Type::STRING && values[i].size > columns[i].size)
                 {
                     throw std::runtime_error("Size too large");
-                }
+                }                
                 if (columns[i].type == Type::BYTES && values[i].size != columns[i].size)
                 {
                     throw std::runtime_error("Size too large");

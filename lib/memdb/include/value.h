@@ -66,42 +66,36 @@ namespace memdb
         {
         }
 
-        Value(const Value &other) : type(other.type), size(other.size), owner(other.owner)
+        Value(const Value &that) : type(that.type), size(that.size), owner(that.owner)
         {
             if (owner)
             {
                 val_ptr = new uint8_t[size];
-                std::copy(other.val_ptr, other.val_ptr + size, val_ptr);
+                std::copy(that.val_ptr, that.val_ptr + size, val_ptr);
             }
             else
             {
-                val_ptr = other.val_ptr;
+                val_ptr = that.val_ptr;
             }
         }
 
-        Value &operator=(const Value &other)
+        Value(Value&& that) noexcept
+            : Value()
         {
-            if (&other != this)
-            {
-                if (owner != other.owner)
-                {
-                    throw std::runtime_error("Ownership strategy of values does not match");
-                }
+            swap(that);
+        }
 
-                type = other.type;
-                size = other.size;
+        void swap(Value& that) noexcept
+        {
+            std::swap(type, that.type);
+            std::swap(size, that.size);
+            std::swap(val_ptr, that.val_ptr);
+            std::swap(owner, that.owner);
+        }
 
-                if (owner)
-                {
-                    delete[] val_ptr;
-                    val_ptr = new uint8_t[size];
-                    std::copy(other.val_ptr, other.val_ptr + size, val_ptr);
-                }
-                else
-                {
-                    val_ptr = other.val_ptr;
-                }
-            }
+        Value &operator=(Value that)
+        {
+            swap(that);
             return *this;
         }        
 

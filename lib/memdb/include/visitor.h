@@ -28,10 +28,10 @@ namespace memdb
 				LeafNode* leaf1, * leaf2;
 				if ((leaf1 = dynamic_cast<LeafNode*>(op_node->left)) && (leaf2 = dynamic_cast<LeafNode*>(op_node->right)))
 				{
-					if (is_literal(leaf1->lexem) && is_literal(leaf2->lexem))
+					if (!leaf1->value.is_empty() && !leaf2->value.is_empty())
 					{
-						Value val1 = lex_to_value(leaf1->lexem);
-						Value val2 = lex_to_value(leaf2->lexem);
+						const Value& val1 = leaf1->value;
+						const Value& val2 = leaf2->value;
 						if (val1.type != val2.type)
 							throw std::runtime_error("Mismatch of operand types in expression");
 
@@ -66,22 +66,22 @@ namespace memdb
 								{
 									result = v1 % v2;
 								}
-								Lexem lexem;
-								lexem.type = LexemType::INT_LIT;
-								lexem.value = std::to_string(result);
+								//Lexem lexem;
+								//lexem.type = LexemType::INT_LIT;
+								//lexem.value = std::to_string(result);
 								delete root;
-								return new LeafNode(lexem);
+								return new LeafNode(Value(result));
 							}
 							else if (value_type == Type::STRING && op_type == Op::PLS)
 							{
 								std::string v1 = val1.get<std::string>();
 								std::string v2 = val2.get<std::string>();
 								std::string result = v1 + v2;
-								Lexem lexem;
-								lexem.type = LexemType::STR_LIT;
-								lexem.value = result;
+								//Lexem lexem;
+								//lexem.type = LexemType::STR_LIT;
+								//lexem.value = result;
 								delete root;
-								return new LeafNode(lexem);
+								return new LeafNode(Value(result));
 							}
 							else
 							{
@@ -117,11 +117,11 @@ namespace memdb
 								result = val1 >= val2;
 							}
 
-							Lexem lexem;
-							lexem.type = LexemType::BOOL_LIT;
-							lexem.value = result ? "true" : "false";
+							//Lexem lexem;
+							//lexem.type = LexemType::BOOL_LIT;
+							//lexem.value = result ? "true" : "false";
 							delete root;
-							return new LeafNode(lexem);
+							return new LeafNode(Value(result));
 						}
 						else if (is_logic_op(op_type))
 						{
@@ -143,11 +143,11 @@ namespace memdb
 								{
 									result = v1 != v2;
 								}
-								Lexem lexem;
-								lexem.type = LexemType::BOOL_LIT;
-								lexem.value = result ? "true" : "false";
+								//Lexem lexem;
+								//lexem.type = LexemType::BOOL_LIT;
+								//lexem.value = result ? "true" : "false";
 								delete root;
-								return new LeafNode(lexem);
+								return new LeafNode(Value(result));
 							}
 							else
 							{
@@ -159,9 +159,9 @@ namespace memdb
 				if ((leaf1 = dynamic_cast<LeafNode*>(op_node->left)) && op_node->right == nullptr)
 				{
 					// Unary op
-					if (is_literal(leaf1->lexem))
+					if (!leaf1->value.is_empty())
 					{
-						Value val1 = lex_to_value(leaf1->lexem);
+						const Value& val1 = leaf1->value;
 						Type value_type = val1.type;
 						Op op_type = op_node->op;
 						if (value_type == Type::INT && (op_type == Op::PLS || op_type == Op::MNS))
@@ -171,20 +171,20 @@ namespace memdb
 							{
 								result = -result;
 							}
-							Lexem lexem;
-							lexem.type = LexemType::INT_LIT;
-							lexem.value = std::to_string(result);
+							//Lexem lexem;
+							//lexem.type = LexemType::INT_LIT;
+							//lexem.value = std::to_string(result);
 							delete root;
-							return new LeafNode(lexem);
+							return new LeafNode(Value(result));
 						}
 						else if (value_type == Type::BOOL && op_type == Op::NOT)
 						{
 							bool result = !val1.get<bool>();
-							Lexem lexem;
-							lexem.type = LexemType::BOOL_LIT;
-							lexem.value = result ? "true" : "false";
+							//Lexem lexem;
+							//lexem.type = LexemType::BOOL_LIT;
+							//lexem.value = result ? "true" : "false";
 							delete root;
-							return new LeafNode(lexem);
+							return new LeafNode(Value(result));
 						}
 						else
 						{
@@ -227,13 +227,13 @@ namespace memdb
 			}
 			else if (leaf = dynamic_cast<LeafNode*>(root))
 			{
-				if (leaf->lexem.type == LexemType::ID)
+				if (!leaf->id.empty())
 				{
-					if (symbols.count(leaf->lexem.value) == 0)
+					if (symbols.count(leaf->id) == 0)
 					{
-						symbols.insert(std::make_pair(leaf->lexem.value, std::vector<LeafNode* >()));
+						symbols.insert(std::make_pair(leaf->id, std::vector<LeafNode* >()));
 					}
-					symbols.at(leaf->lexem.value).push_back(leaf);
+					symbols.at(leaf->id).push_back(leaf);
 				}				
 			}			
 		}
@@ -253,7 +253,7 @@ namespace memdb
 				Op op_type = op_node->op;
 				Value val1 = visit(op_node->left);
 				Value val2 = visit(op_node->right);
-				if (val2.type != Type::NONE)
+				if (!val2.is_empty())
 				{					
 					switch (op_type)
 					{
@@ -305,14 +305,7 @@ namespace memdb
 			}
 			else if (leaf_node = dynamic_cast<LeafNode*>(root))
 			{
-				if (leaf_node->lexem.type == LexemType::ID)
-				{
-					return *leaf_node->value;
-				}
-				else
-				{
-					return lex_to_value(leaf_node->lexem);
-				}
+				return leaf_node->value;				
 			}
 			return Value(); // NULL value
 		}

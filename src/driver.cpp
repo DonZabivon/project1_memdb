@@ -31,14 +31,14 @@ std::string random_string(size_t size)
     std::uniform_int_distribution<int> distr2(97, 122);
     std::uniform_int_distribution<int> distr3(1000, 9999);
 
-    size = distr1(gen);
+    //size = distr1(gen);
 
     std::string s;
-    for (size_t i = 0; i < size - 4; ++i)
+    for (size_t i = 0; i < size; ++i)
     {
         s.append(std::string(1, (char)distr2(gen)));
     }
-    s += std::to_string(distr3(gen));
+    //s += std::to_string(distr3(gen));
 
     return s;
 }
@@ -368,7 +368,7 @@ void scenario4()
                 break;
         }
         
-        std::string query = "select id, login from users where login >= \"a\" && login < \"a2\" && is_admin";
+        std::string query = "select id, login from users where login >= \"a\" && login < \"b\" && code < 0xffffffff";
 
         std::cout << std::endl << "Selecting by conditions using query:" << std::endl;
         std::cout << "    " << query << std::endl << std::endl;
@@ -388,20 +388,16 @@ void scenario4()
 
         std::cout << std::setw(8) << std::left << rs4.get_columns()[0]
             << std::setw(16) << std::left << rs4.get_columns()[1]
-            /* << std::setw(9) << std::left << rs4.get_columns()[2]*/
-            /* << rs4.get_columns()[3]*/ << std::endl;
+            << std::endl;
 
         count = 0;
         for (const auto& row : rs4)
         {
             int id = row.get<int32_t>("id");
             std::string login = row.get<std::string>("login");
-            //bool is_admin = row.get<bool>("is_admin");
-            //std::string code = to_string(row.get<Bytes>("code"));
             std::cout << std::setw(8) << std::left << id
                 << std::setw(16) << std::left << login
-                /* << std::setw(9) << std::left << is_admin*/
-                /* << code */ << std::endl;
+                << std::endl;
             if (++count == 5)
                 break;
         }
@@ -444,20 +440,16 @@ void scenario4()
         std::cout << "First 5 rows:" << std::endl;
         std::cout << std::setw(8) << std::left << rs5.get_columns()[0]
             << std::setw(16) << std::left << rs5.get_columns()[1]
-            /* << std::setw(9) << std::left << rs4.get_columns()[2]*/
-            /* << rs4.get_columns()[3]*/ << std::endl;
+            << std::endl;
 
         count = 0;
         for (const auto& row : rs5)
         {
             int id = row.get<int32_t>("id");
-            std::string login = row.get<std::string>("login");
-            //bool is_admin = row.get<bool>("is_admin");
-            //std::string code = to_string(row.get<Bytes>("code"));
+            std::string login = row.get<std::string>("login");            
             std::cout << std::setw(8) << std::left << id
                 << std::setw(16) << std::left << login
-                /* << std::setw(9) << std::left << is_admin*/
-                /* << code */ << std::endl;
+                << std::endl;
             if (++count == 5)
                 break;
         }

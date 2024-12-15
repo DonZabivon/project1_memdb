@@ -64,11 +64,11 @@ namespace memdb
 
 	struct Lexem
 	{
-		LexemType type;
+		LexemType type = LexemType::EOQ;
 		std::string value;
-		size_t line;
-		size_t col;
-		size_t begin;
-		size_t end;
+		size_t line = 0;
+		size_t col = 0;
+		size_t begin = 0;
+		size_t end = 0;		
 	};	
 }
